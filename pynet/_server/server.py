@@ -2,20 +2,23 @@ import socket
 import threading
 from abc import ABC, abstractmethod
 from typing import Callable, Self
-from pynet._utils.utils import broadcast, open_server
+from pynet._utils.utils import broadcast, open_socket
 
 
 class ServerType(ABC):
 
-    conns = None
-
     def __init__(self, **kwargs) -> None: 
         self.__threads = []
+        self.__conns = []
         self.__arguments = kwargs
 
     @property
     def threads(self) -> list:
         return self.__threads
+    
+    @property
+    def conns(self) -> list:
+        return self.__conns
     
     @property
     def arguments(self) -> tuple:
