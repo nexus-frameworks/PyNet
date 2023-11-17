@@ -1,7 +1,7 @@
 import socket
 import threading
 from abc import ABC, abstractmethod
-from pynet._utils.utils import broadcast, open_client
+from pynet._utils.utils import broadcast, open_socket
 from typing import Callable, Self
 
 
