@@ -1,7 +1,7 @@
 import socket
 import threading
 from abc import ABC, abstractmethod
-from pynet._utils.utils import broadcast
+from pynet._utils.utils import broadcast, open_client
 from typing import Callable, Self
 
 
@@ -26,6 +26,10 @@ class ClientType(ABC):
 
     @abstractmethod
     def handle_msg(self, data: bytes) -> None:
+        pass
+
+    @abstractmethod
+    def disconnect_condition(self) -> None:
         pass
 
     
