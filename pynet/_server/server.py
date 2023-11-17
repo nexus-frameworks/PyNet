@@ -4,44 +4,22 @@ import threading
 from abc import ABC, abstractmethod
 from typing import Callable, Self
 from pynet.utils import broadcast, open_socket, is_open
-from pynet.p2p import Peer
+from pynet._base.base import Base
 
+class ServerType(Base, ABC):
 
-class ServerType(ABC):
-
-    def __init__(self, **kwargs) -> None: 
-        self.__threads = []
-        self.__conns = []
-        self.__configs = kwargs
-
-    @property
-    def threads(self) -> list:
-        return self.__threads
-    
-    @property
-    def conns(self) -> list:
-        return self.__conns
-    
-    def show_configs(self) -> dict:
-        return self.__configs
-
-    def config_server(self, **kwargs): 
-        self.__configs = kwargs
+    def config_server(self, **kwargs):
+        self.configs = kwargs
         return self
-    
-    def reset_configs(self) -> None:
-        self.__configs.clear()
-    
-    configs = property(show_configs, config_server, reset_configs)
 
     def start(self, on_loop: bool=False) -> None:
         i = 0
-        with open_socket(*self.arguments, 'server', 
-                         self.arguments.get('addr_family', socket.AF_INET), 
-                         self.arguments.get('kind', socket.SOCK_STREAM)) as sock:
+        with open_socket(self.configs.get('host', 'localhost'), self.configs.get('port', 5432), 'server', 
+                         self.configs.get('addr_family', socket.AF_INET), 
+                         self.configs.get('kind', socket.SOCK_STREAM)) as sock:
             self.__socket: socket.socket = sock
-            self.__socket.listen(self.arguments.get('backlog', 5))
-            while i != self.arguments.get('max_connections', None):
+            self.__socket.listen(self.configs.get('backlog', 5))
+            while i != self.configs.get('max_connections', None):
                 ready, _, _ = select.select([self.__socket], [], [])
                 if ready:
                     self.accept_client()
@@ -91,3 +69,13 @@ class ServerFactory(ServerType):
     def __new__(cls) -> Self:
         return super().__new__()
     pass
+
+class ServerTest(ServerType):
+    def handle_client(self, client_socket: socket, addr: tuple):
+        return 
+    
+    def send(self, conn: socket, data: bytes):
+        return 
+    
+    def receive(self, conn: socket) -> bytes:
+        return 
