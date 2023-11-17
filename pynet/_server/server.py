@@ -12,7 +12,7 @@ class ServerType(Base, ABC):
         self.configs = kwargs
         return self
 
-    def start(self, on_loop: bool=False) -> None:
+    def start(self, wait_disconnect: bool=True) -> None:
         i = 0
         with open_socket(self.configs.get('host', 'localhost'), self.configs.get('port', 5432), 'server', 
                          self.configs.get('addr_family', socket.AF_INET), 
@@ -26,13 +26,11 @@ class ServerType(Base, ABC):
                     i += 1
                 if self.disconnect_condition():
                     break
-            if on_loop:
-                self.loop()
+            if wait_disconnect:
+                self.wait()
 
-    def loop(self) -> None:
-        while True:
-            if self.disconnect_condition():
-                break
+    def wait(self) -> None:
+        [thread.join() for thread in self.threads]
 
     def accept_client(self) -> None:
         conn, addr = self.__socket.accept()
@@ -55,6 +53,13 @@ class ServerType(Base, ABC):
 
     def disconnect_condition(self) -> None:
         return all(not is_open(conn) for conn  in self.conns)
+    
+    def __enter__(self) -> Self:
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        [conn.close() for conn in self.conns]
+        pass
 
 
 class ServerSingleton(ServerType):

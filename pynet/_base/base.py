@@ -1,3 +1,7 @@
+import socket
+import threading
+
+
 class Base:
     def __init__(self, **kwargs) -> None: 
         self.__threads = []
@@ -5,11 +9,11 @@ class Base:
         self.__configs = kwargs
 
     @property
-    def threads(self) -> list:
+    def threads(self) -> list[threading.Thread]:
         return self.__threads
     
     @property
-    def conns(self) -> list:
+    def conns(self) -> list[socket.socket]:
         return self.__conns
     
     def show_configs(self) -> dict:
