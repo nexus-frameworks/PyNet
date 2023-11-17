@@ -1,15 +1,7 @@
 import socket
 from typing import Callable, Self
+from pynet._utils.utils import broadcast
 
-
-
-def broadcast(conns: list[socket.socket] = []): 
-    def broadcast_operation(operation: Callable):
-        def wrapper(*args, **kwargs):
-            for conn in conns:
-                operation(conn, *args, **kwargs)
-        return wrapper
-    return broadcast_operation 
 
 class Server:
     conns: list[socket.socket]
@@ -32,11 +24,3 @@ class Server:
     def receive(self, conn: socket.socket) -> bytes: ...
     def handle_msg(self, conn: socket.socket, data: bytes): ...
 
-
-def main(host: str, port: int):
-    server = Server()
-    server.boot_server()
-    server.start()
-    
-if __name__ == '__main__':
-    main()

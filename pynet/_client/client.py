@@ -1,15 +1,6 @@
 import socket
-import client.gui as gui
+from pynet._utils.utils import broadcast
 from typing import Callable, Self
-
-
-def broadcast(conns: list[socket.socket] = []):
-    def broadcast_operation(operation: Callable):
-        def wrapper(*args, **kwargs):
-            for conn in conns:
-                operation(conn, *args, **kwargs)
-        return wrapper
-    return broadcast_operation
 
 
 class Client:
@@ -35,4 +26,3 @@ class Client:
         pass
 
     
-def main(host: str, port: int): ...
