@@ -1,2 +1,5 @@
-def a():
-    print("a")
+
+
+
+class Peer:
+    pass
