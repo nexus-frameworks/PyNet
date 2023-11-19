@@ -6,18 +6,24 @@ from typing import Callable, Self
 from pynet._base.base import Base
 
 
-class ClientType(Base, ABC):
+class ClientType(Base):
 
     
     def config_client(self, **kwargs):
         self.configs = kwargs
         return self
+    
+    def start(self) -> Self:
+        self.socket = socket.socket(self.configs.get('addr_family', socket.AF_INET),
+                                    self.configs.get('kind', socket.SOCK_STREAM))
+        self.socket.connect((self.configs.get('host', 'localhost'), self.configs['port']))
+        return self
 
-    def start(self) -> None:
-        with open_socket(self.configs.get('host', 'localhost'), self.configs.get('port', 5432), 'client', 
+    def run(self) -> None:
+        with open_socket(self.configs.get('host', 'localhost'), self.configs['port'], 'client', 
                          self.configs.get('addr_family', socket.AF_INET), 
                          self.configs.get('kind', socket.SOCK_STREAM)) as sock:
-            self.__socket: socket.socket = sock
+            self.socket: socket.socket = sock
             self.handle_connection()
             self.wait()
         pass
@@ -56,16 +62,11 @@ class ClientType(Base, ABC):
             if self.disconnect_condition():
                 break
 
-    def disconnect_condition(self) -> None:
+    def disconnect_condition(self) -> bool:
         pass
 
     def __enter__(self) -> Self:
-        return self
+        return self.start()
     
     def __exit__(self, exc_type, exc_value, traceback) -> None:
-        self.__socket.close()
-        pass
-    
-# class ClientFactory(ClientType):
-#     def __new__(cls) -> Self:
-#         return super().__new__()
+        self.socket.close()

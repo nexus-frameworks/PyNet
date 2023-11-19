@@ -6,41 +6,46 @@ from typing import Callable, Self
 from pynet.utils import broadcast, open_socket, is_open
 from pynet._base.base import Base
 
-class ServerType(Base, ABC):
+class ServerType(Base):
 
     def config_server(self, **kwargs):
         self.configs = kwargs
         return self
+    
+    def start(self) -> Self:
+        self.socket = socket.socket(self.configs.get('addr_family', socket.AF_INET), 
+                         self.configs.get('kind', socket.SOCK_STREAM))
+        self.socket.bind((self.configs.get('host', 'localhost'), self.configs['port']))
+        return self
 
-    def start(self, wait_disconnect: bool=True) -> None:
+    def run(self) -> None:
         i = 0
-        with open_socket(self.configs.get('host', 'localhost'), self.configs.get('port', 5432), 'server', 
+        with open_socket(self.configs.get('host', 'localhost'), self.configs['port'], 'server', 
                          self.configs.get('addr_family', socket.AF_INET), 
                          self.configs.get('kind', socket.SOCK_STREAM)) as sock:
-            self.__socket: socket.socket = sock
-            self.__socket.listen(self.configs.get('backlog', 5))
+            self.socket: socket.socket = sock
+            self.socket.listen(self.configs.get('backlog', 5))
             while i != self.configs.get('max_connections', None):
-                ready, _, _ = select.select([self.__socket], [], [])
+                ready, _, _ = select.select([self.socket], [], [])
                 if ready:
                     self.accept_client()
                     i += 1
                 if self.disconnect_condition():
                     break
-            if wait_disconnect:
-                self.wait()
+            self.wait()
 
     def wait(self) -> None:
         [thread.join() for thread in self.threads]
 
     def accept_client(self) -> None:
-        conn, addr = self.__socket.accept()
+        conn, addr = self.socket.accept()
         self.conns.append(conn)
         thread = threading.Thread(target=self.handle_client, args=(conn, addr))
         self.threads.append(thread)
         thread.start()
 
     @abstractmethod   
-    def handle_client(self, client_socket: socket.socket, addr: tuple): 
+    def handle_client(self, clientsocket: socket.socket, addr: tuple): 
         pass
     
     @abstractmethod
@@ -55,11 +60,10 @@ class ServerType(Base, ABC):
         return all(not is_open(conn) for conn  in self.conns)
     
     def __enter__(self) -> Self:
-        return self
+        return self.start()
     
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         [conn.close() for conn in self.conns]
-        pass
 
 
 class ServerSingleton(ServerType):
@@ -76,7 +80,7 @@ class ServerFactory(ServerType):
     pass
 
 class ServerTest(ServerType):
-    def handle_client(self, client_socket: socket, addr: tuple):
+    def handle_client(self, clientsocket: socket, addr: tuple):
         return 
     
     def send(self, conn: socket, data: bytes):
