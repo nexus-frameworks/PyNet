@@ -68,43 +68,59 @@ class ServerType(Base):
 
 
 class ServerSingleton(ServerType):
-    __instance = None
+    _instance = None
 
-    def __new__(cls) -> Self:
-        if not cls.__instance:
-            cls.__instance = super().__new__(cls)
-        return cls.__instance
+    def _new_(cls) -> Self:
+        if not cls._instance:
+            cls._instance = super()._new_(cls)
+        return cls._instance
 
 
 S = TypeVar('S', bound=ServerType)
 
 
 class ServerFactory(BaseFactory):
+
+    _baseclasses = [ServerType]
     
     def make_server_class(self, name: str, base: S = ServerType, **methods) -> S:
         ret = None
-        if base not in self.__baseclasses:
-            raise ValueError("Invalid base class. Must be one of the following: " + ' '.join(self.__baseclasses))
-        if name not in self.__classes:
+        if base not in self._baseclasses:
+            print(base)
+            raise ValueError("Invalid base class. Must be one of the following: " + ' '.join([i.__name__ for i in self._baseclasses]))
+        if name not in self._classes:
             abc_methods = {key: inspect.getsource(value) for key, value in methods.items()}
             ret = type(name, (base,), abc_methods)
-            self.__classes.append(ret)
+            self._classes.append(ret)
         else:
             ret = eval(name)
         return ret
 
     def make_server(self, name: str, base: S = ServerType, **methods) -> S:
-        cls = self.make_server_class(base, name, **methods)
+        cls = self.make_server_class(name, base, **methods)
         return cls()
 
     __call__ = make_server
 
-class ServerTest(ServerType):
+class Sever(ServerType):
     def handle_client(self, conn: socket, addr: tuple):
         return 
-    
+
     def send(self, conn: socket, data: bytes):
         return 
-    
+
     def receive(self, conn: socket) -> bytes:
         return 
+        
+def handle_client(self, conn: socket, addr: tuple):
+    return 
+
+def send(self, conn: socket, data: bytes):
+    return 
+
+def receive(self, conn: socket) -> bytes:
+    return 
+    
+
+ServerTest: S = ServerFactory().make_server_class('ServerTest', ServerType,
+                                            handle_client=handle_client, send=send, receive=receive)
