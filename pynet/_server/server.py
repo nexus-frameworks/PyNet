@@ -1,10 +1,11 @@
 import select
 import socket
 import threading
+import inspect
 from abc import ABC, abstractmethod
-from typing import Callable, Self
+from typing import Callable, Self, Type, TypeVar
 from pynet.utils import broadcast, open_socket, is_open
-from pynet._base.base import Base
+from pynet._base.base import Base, BaseFactory
 
 class ServerType(Base):
 
@@ -45,7 +46,7 @@ class ServerType(Base):
         thread.start()
 
     @abstractmethod   
-    def handle_client(self, clientsocket: socket.socket, addr: tuple): 
+    def handle_client(self, conn: socket.socket, addr: tuple): 
         pass
     
     @abstractmethod
@@ -74,13 +75,32 @@ class ServerSingleton(ServerType):
             cls.__instance = super().__new__(cls)
         return cls.__instance
 
-class ServerFactory(ServerType):
-    def __new__(cls) -> Self:
-        return super().__new__()
-    pass
+
+S = TypeVar('S', bound=ServerType)
+
+
+class ServerFactory(BaseFactory):
+    
+    def make_server_class(self, name: str, base: S = ServerType, **methods) -> S:
+        ret = None
+        if base not in self.__baseclasses:
+            raise ValueError("Invalid base class. Must be one of the following: " + ' '.join(self.__baseclasses))
+        if name not in self.__classes:
+            abc_methods = {key: inspect.getsource(value) for key, value in methods.items()}
+            ret = type(name, (base,), abc_methods)
+            self.__classes.append(ret)
+        else:
+            ret = eval(name)
+        return ret
+
+    def make_server(self, name: str, base: S = ServerType, **methods) -> S:
+        cls = self.make_server_class(base, name, **methods)
+        return cls()
+
+    __call__ = make_server
 
 class ServerTest(ServerType):
-    def handle_client(self, clientsocket: socket, addr: tuple):
+    def handle_client(self, conn: socket, addr: tuple):
         return 
     
     def send(self, conn: socket, data: bytes):

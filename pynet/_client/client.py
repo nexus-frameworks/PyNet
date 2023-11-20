@@ -1,9 +1,10 @@
+import inspect
 import socket
 import threading
 from abc import ABC, abstractmethod
 from pynet._utils.utils import broadcast, open_socket
-from typing import Callable, Self
-from pynet._base.base import Base
+from typing import Callable, Self, TypeVar
+from pynet._base.base import Base, BaseFactory
 
 
 class ClientType(Base):
@@ -70,3 +71,26 @@ class ClientType(Base):
     
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         self.socket.close()
+
+
+C = TypeVar('C', bound=ClientType)
+
+class ClientFactory(BaseFactory):
+
+    def make_client_class(self, name: str, base: C = ClientType, **methods) -> C:
+        ret = None
+        if base not in self.__baseclasses:
+            raise ValueError("Invalid base class. Must be one of the following: " + ' '.join(self.__baseclasses))
+        if name not in self.__classes:
+            abc_methods = {key: inspect.getsource(value) for key, value in methods.items()}
+            ret = type(name, (base,), abc_methods)
+            self.__classes.append(ret)
+        else:
+            ret = eval(name)
+        return ret
+
+    def make_client(self, name: str, base: C = ClientType, **methods) -> C:
+        cls = self.make_client_class(base, name, **methods)
+        return cls()
+
+    __call__ = make_client

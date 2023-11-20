@@ -53,3 +53,15 @@ class Base(ABC):
         pass
 
     configs = property(show_configs, reconfig, reset_configs)
+
+
+class BaseFactory:
+
+    _instance = None
+    _classes = []
+    _baseclasses = []
+
+    def __new__(cls) -> Self:
+        if not cls._instance:
+            cls._instance = super().__new__(cls)
+        return cls._instance
