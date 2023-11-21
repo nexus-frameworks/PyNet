@@ -2,16 +2,18 @@ import socket
 from typing import Callable, Literal
 import contextlib
 import concurrent.futures as concurrent
+import multiprocessing as mp
 
 #! OBS: Study how to avoid broadcasting multiple times due to multithreading at server side
 def broadcast(conns: list[socket.socket] = []):
     def broadcast_operation(operation: Callable):
         def wrapper():
-            with concurrent.ProcessPoolExecutor(max_workers=len(conns)) as executor:
-                res = executor.map(operation, conns)
-                return list(res)
-            # for conn in conns:
-            #     operation(conn, *args, **kwargs)
+            # TODO: Figure out why this is not working
+            # with concurrent.ProcessPoolExecutor(max_workers=len(conns)) as executor:
+            #     res = executor.map(operation, conns)
+            #     return list(res)
+            for conn in conns:
+                operation(conn)
         return wrapper
     return broadcast_operation
 

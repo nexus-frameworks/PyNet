@@ -21,6 +21,7 @@ class ServerType(Base):
 
     def run(self) -> None:
         i = 0
+        #TODO: Figure out how to make the socket close here properly
         with open_socket(self.configs.get('host', 'localhost'), self.configs['port'], 'server', 
                          self.configs.get('addr_family', socket.AF_INET), 
                          self.configs.get('kind', socket.SOCK_STREAM)) as sock:
@@ -86,7 +87,6 @@ class ServerFactory(BaseFactory):
     def make_server_class(self, name: str, base: S = ServerType, **methods) -> S:
         ret = None
         if base not in self._baseclasses:
-            print(base)
             raise ValueError("Invalid base class. Must be one of the following: " + ' '.join([i.__name__ for i in self._baseclasses]))
         if name not in self._classes:
             abc_methods = {key: inspect.getsource(value) for key, value in methods.items()}
