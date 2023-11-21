@@ -3,7 +3,7 @@ import socket
 import threading
 import inspect
 from abc import ABC, abstractmethod
-from typing import Callable, Self, Type, TypeVar
+from typing import TypeVar
 from pynet.utils import broadcast, open_socket, is_open
 from pynet._base.base import Base, BaseFactory
 
@@ -13,7 +13,7 @@ class ServerType(Base):
         self.configs = kwargs
         return self
     
-    def start(self) -> Self:
+    def start(self) -> 'ServerType':
         self.socket = socket.socket(self.configs.get('addr_family', socket.AF_INET), 
                          self.configs.get('kind', socket.SOCK_STREAM))
         self.socket.bind((self.configs.get('host', 'localhost'), self.configs['port']))
@@ -22,10 +22,7 @@ class ServerType(Base):
     def run(self) -> None:
         i = 0
         #TODO: Figure out how to make the socket close here properly
-        with open_socket(self.configs.get('host', 'localhost'), self.configs['port'], 'server', 
-                         self.configs.get('addr_family', socket.AF_INET), 
-                         self.configs.get('kind', socket.SOCK_STREAM)) as sock:
-            self.socket: socket.socket = sock
+        with self:
             self.socket.listen(self.configs.get('backlog', 5))
             while i != self.configs.get('max_connections', None):
                 ready, _, _ = select.select([self.socket], [], [])
@@ -35,6 +32,19 @@ class ServerType(Base):
                 if self.disconnect_condition():
                     break
             self.wait()
+        # with open_socket(self.configs.get('host', 'localhost'), self.configs['port'], 'server', 
+        #                  self.configs.get('addr_family', socket.AF_INET), 
+        #                  self.configs.get('kind', socket.SOCK_STREAM)) as sock:
+        #     self.socket: socket.socket = sock
+        #     self.socket.listen(self.configs.get('backlog', 5))
+        #     while i != self.configs.get('max_connections', None):
+        #         ready, _, _ = select.select([self.socket], [], [])
+        #         if ready:
+        #             self.accept_client()
+        #             i += 1
+        #         if self.disconnect_condition():
+        #             break
+        #     self.wait()
 
     def wait(self) -> None:
         [thread.join() for thread in self.threads]
@@ -61,24 +71,14 @@ class ServerType(Base):
     def disconnect_condition(self) -> None:
         return all(not is_open(conn) for conn  in self.conns)
     
-    def __enter__(self) -> Self:
+    def __enter__(self) -> 'ServerType':
         return self.start()
     
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         [conn.close() for conn in self.conns]
 
 
-class ServerSingleton(ServerType):
-    _instance = None
-
-    def _new_(cls) -> Self:
-        if not cls._instance:
-            cls._instance = super()._new_(cls)
-        return cls._instance
-
-
 S = TypeVar('S', bound=ServerType)
-
 
 class ServerFactory(BaseFactory):
 
@@ -102,25 +102,26 @@ class ServerFactory(BaseFactory):
 
     __call__ = make_server
 
-class Sever(ServerType):
+
+class ServerSingleton(ServerType):
+    _instance = None
+
+    def _new_(cls) -> 'ServerSingleton':
+        if not cls._instance:
+            cls._instance = super()._new_(cls)
+        return cls._instance
+
+
+class SimpleServer(ServerType):
     def handle_client(self, conn: socket, addr: tuple):
-        return 
+        print(f'Connected to {addr}')
+        while True:
+            data = self.receive(conn)
+            if data == b'':
+                break
+            print(f'Received {data} from {addr}')
+            self.send(conn, data)
+        print(f'Disconnected from {addr}')
 
-    def send(self, conn: socket, data: bytes):
-        return 
 
-    def receive(self, conn: socket) -> bytes:
-        return 
-        
-def handle_client(self, conn: socket, addr: tuple):
-    return 
-
-def send(self, conn: socket, data: bytes):
-    return 
-
-def receive(self, conn: socket) -> bytes:
-    return 
-    
-
-ServerTest: S = ServerFactory().make_server_class('ServerTest', ServerType,
-                                            handle_client=handle_client, send=send, receive=receive)
+class SimpleServerSingleton(ServerSingleton, SimpleServer): ...

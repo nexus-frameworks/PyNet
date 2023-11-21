@@ -9,6 +9,7 @@ class Base(ABC):
         self.__threads = []
         self.__conns = []
         self.__configs = kwargs
+        self.__lock = threading.Lock()
 
     @property
     def threads(self) -> list[threading.Thread]:
@@ -17,6 +18,10 @@ class Base(ABC):
     @property
     def conns(self) -> list[socket.socket]:
         return self.__conns
+
+    @property
+    def lock(self) -> threading.Lock:
+        return self.__lock
     
     def show_configs(self) -> dict:
         return self.__configs

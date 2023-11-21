@@ -1,18 +1,9 @@
+import time
 from pynet.server import *
 from pynet.client import *
 
 
-class ExampleServer(ServerSingleton):
-
-    def handle_client(self, conn: socket.socket, addr: tuple):
-        print(f'Connected to {addr}')
-        while True:
-            data = self.receive(conn)
-            if data == b'':
-                break
-            print(f'Received {data} from {addr}')
-            self.send(conn, data)
-        print(f'Disconnected from {addr}')
+class ExampleServer(SimpleServerSingleton):
 
     def send(self, conn: socket.socket, data: bytes):
         broadcast(self.conns)(lambda conn: conn.send(data))()
@@ -20,14 +11,11 @@ class ExampleServer(ServerSingleton):
     def receive(self, conn: socket.socket) -> bytes:
         return conn.recv(1024)
 
-    def __exit__(self, *args, **kwargs):
-        print('Server closed')
-
-
 class ExampleClient(ClientType):
 
     def input(self) -> bytes:
-        return input('>>> ').encode('utf-8')
+        self.user_input = input('>>> ').encode('utf-8')
+        return self.user_input
 
     def send(self, data: bytes, *args, **kwargs) -> None:
         self.socket.send(data)
@@ -38,4 +26,4 @@ class ExampleClient(ClientType):
         return ret
 
     def disconnect_condition(self) -> bool:
-        return self.input() == b'exit'
+        return self.user_input == b'exit'

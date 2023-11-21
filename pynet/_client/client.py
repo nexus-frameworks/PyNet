@@ -3,18 +3,18 @@ import socket
 import threading
 from abc import ABC, abstractmethod
 from pynet._utils.utils import broadcast, open_socket
-from typing import Callable, Self, TypeVar
+from typing import Callable, TypeVar
 from pynet._base.base import Base, BaseFactory
 
 
 class ClientType(Base):
-
     
+
     def config_client(self, **kwargs):
         self.configs = kwargs
         return self
     
-    def start(self) -> Self:
+    def start(self) -> 'ClientType':
         self.socket = socket.socket(self.configs.get('addr_family', socket.AF_INET),
                                     self.configs.get('kind', socket.SOCK_STREAM))
         self.socket.connect((self.configs.get('host', 'localhost'), self.configs['port']))
@@ -27,8 +27,7 @@ class ClientType(Base):
             self.socket: socket.socket = sock
             self.handle_connection()
             self.wait()
-        pass
-
+    
     def handle_connection(self) -> None:
         receive_thread = threading.Thread(target=self.receive_loop)
         send_thread = threading.Thread(target=self.send_loop)
@@ -67,7 +66,7 @@ class ClientType(Base):
             if self.disconnect_condition():
                 break
 
-    def __enter__(self) -> Self:
+    def __enter__(self) -> 'ClientType':
         return self.start()
     
     def __exit__(self, exc_type, exc_value, traceback) -> None:
