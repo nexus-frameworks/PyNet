@@ -4,14 +4,15 @@ import contextlib
 import concurrent.futures as concurrent
 import multiprocessing as mp
 
-#! OBS: Study how to avoid broadcasting multiple times due to multithreading at server side
-def broadcast(conns: list[socket.socket] = []):
+#! OBS: Study how to use multiprocessing here. ProcessPoolExecutor is not working as expected
+def broadcast(conns: list[socket.socket]):
     def broadcast_operation(operation: Callable):
         def wrapper():
-            # TODO: Figure out why this is not working
+            # # TODO: Figure out why this is not working
+            # mp.set_start_method('fork', True)
             # with concurrent.ProcessPoolExecutor(max_workers=len(conns)) as executor:
             #     res = executor.map(operation, conns)
-            #     return list(res)
+            # return list(res)
             for conn in conns:
                 operation(conn)
         return wrapper

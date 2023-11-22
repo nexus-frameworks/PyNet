@@ -1,4 +1,3 @@
-import time
 from pynet.server import *
 from pynet.client import *
 
@@ -14,7 +13,7 @@ class ExampleServer(SimpleServerSingleton):
 class ExampleClient(ClientType):
 
     def input(self) -> bytes:
-        self.user_input = input('>>> ').encode('utf-8')
+        self.user_input = input().encode('utf-8')
         return self.user_input
 
     def send(self, data: bytes, *args, **kwargs) -> None:
@@ -22,8 +21,8 @@ class ExampleClient(ClientType):
 
     def receive(self, *args, **kwargs) -> bytes:
         ret = self.socket.recv(1024)
-        print(str(ret, 'utf-8'))
+        print('[BROADCAST]', str(ret, 'utf-8'))
         return ret
 
     def disconnect_condition(self) -> bool:
-        return self.user_input == b'exit'
+        return self.user_input == b'exit' or not is_open(self.socket)

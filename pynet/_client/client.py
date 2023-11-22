@@ -54,6 +54,7 @@ class ClientType(Base):
             data = self.input()
             self.send(data, *args, **kwargs)
             if self.disconnect_condition():
+                self.disconnect()
                 break
     
     @abstractmethod
@@ -64,7 +65,11 @@ class ClientType(Base):
         while True:
             data = self.receive(*args, **kwargs)
             if self.disconnect_condition():
+                self.disconnect()
                 break
+        
+    def disconnect(self) -> None:
+        self.socket.close()
 
     def __enter__(self) -> 'ClientType':
         return self.start()

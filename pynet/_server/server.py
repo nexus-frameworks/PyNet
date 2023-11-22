@@ -32,19 +32,6 @@ class ServerType(Base):
                 if self.disconnect_condition():
                     break
             self.wait()
-        # with open_socket(self.configs.get('host', 'localhost'), self.configs['port'], 'server', 
-        #                  self.configs.get('addr_family', socket.AF_INET), 
-        #                  self.configs.get('kind', socket.SOCK_STREAM)) as sock:
-        #     self.socket: socket.socket = sock
-        #     self.socket.listen(self.configs.get('backlog', 5))
-        #     while i != self.configs.get('max_connections', None):
-        #         ready, _, _ = select.select([self.socket], [], [])
-        #         if ready:
-        #             self.accept_client()
-        #             i += 1
-        #         if self.disconnect_condition():
-        #             break
-        #     self.wait()
 
     def wait(self) -> None:
         [thread.join() for thread in self.threads]
@@ -59,6 +46,10 @@ class ServerType(Base):
     @abstractmethod   
     def handle_client(self, conn: socket.socket, addr: tuple): 
         pass
+
+    def remove_client(self, conn: socket.socket) -> None:
+        self.conns.remove(conn)
+        conn.close()
     
     @abstractmethod
     def send(self, conn: socket.socket, data: bytes):
@@ -68,13 +59,14 @@ class ServerType(Base):
     def receive(self, conn: socket.socket) -> bytes:
         pass
 
-    def disconnect_condition(self) -> None:
-        return all(not is_open(conn) for conn  in self.conns)
+    def disconnect_condition(self) -> bool:
+        return all(not is_open(conn) for conn in self.conns)
     
     def __enter__(self) -> 'ServerType':
         return self.start()
     
     def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self.socket.close()
         [conn.close() for conn in self.conns]
 
 
@@ -122,6 +114,7 @@ class SimpleServer(ServerType):
             print(f'Received {data} from {addr}')
             self.send(conn, data)
         print(f'Disconnected from {addr}')
+        self.remove_client(conn)
 
 
 class SimpleServerSingleton(ServerSingleton, SimpleServer): ...
