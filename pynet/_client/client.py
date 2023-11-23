@@ -2,7 +2,7 @@ import inspect
 import socket
 import threading
 from abc import ABC, abstractmethod
-from pynet._utils.utils import broadcast, open_socket
+from pynet.utils import broadcast, is_open, open_socket
 from typing import Callable, TypeVar
 from pynet._base.base import Base, BaseFactory
 
@@ -52,10 +52,10 @@ class ClientType(Base):
     def send_loop(self, *args, **kwargs) -> None:
         while True:
             data = self.input()
-            self.send(data, *args, **kwargs)
             if self.disconnect_condition():
                 self.disconnect()
                 break
+            self.send(data, *args, **kwargs)
     
     @abstractmethod
     def receive(self, *args, **kwargs) -> bytes:
@@ -64,6 +64,8 @@ class ClientType(Base):
     def receive_loop(self, *args, **kwargs) -> None:
         while True:
             data = self.receive(*args, **kwargs)
+            if not data:
+                break
             if self.disconnect_condition():
                 self.disconnect()
                 break

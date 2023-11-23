@@ -1,11 +1,13 @@
 import select
 import socket
+import asyncio
 import threading
 import inspect
 from abc import ABC, abstractmethod
 from typing import TypeVar
 from pynet.utils import broadcast, open_socket, is_open
 from pynet._base.base import Base, BaseFactory
+
 
 class ServerType(Base):
 
@@ -60,7 +62,7 @@ class ServerType(Base):
         pass
 
     def disconnect_condition(self) -> bool:
-        return all(not is_open(conn) for conn in self.conns)
+        return all(not is_open(conn) for conn in self.conns) and self.conns
     
     def __enter__(self) -> 'ServerType':
         return self.start()
