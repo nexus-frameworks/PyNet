@@ -64,8 +64,6 @@ class ClientType(Base):
     def receive_loop(self, *args, **kwargs) -> None:
         while True:
             data = self.receive(*args, **kwargs)
-            if not data:
-                break
             if self.disconnect_condition():
                 self.disconnect()
                 break
